@@ -374,23 +374,23 @@ def tensor_reduce(
 
     """
 
-    def _reduce( 
-            out: Storage, 
-            out_shape: Shape, 
-            out_strides: Strides, 
-            a_storage: Storage, 
-            a_shape: Shape, 
-            a_strides: Strides, 
-            reduce_dim: int,
+    def _reduce(
+        out: Storage,
+        out_shape: Shape,
+        out_strides: Strides,
+        a_storage: Storage,
+        a_shape: Shape,
+        a_strides: Strides,
+        reduce_dim: int,
     ) -> None:
-        out_index: Index = np.zeros(MAX_DIMS, np. int32)
-        reduce_size = a_shape[ reduce_dim]
-        for i in range( len(out)):
+        out_index: Index = np.zeros(MAX_DIMS, np.int32)
+        reduce_size = a_shape[reduce_dim]
+        for i in range(len(out)):
             to_index(i, out_shape, out_index)
             o = index_to_position(out_index, out_strides)
-            for s in range (reduce_size):
+            for s in range(reduce_size):
                 out_index[reduce_dim] = s
-                j= index_to_position(out_index, a_strides)
+                j = index_to_position(out_index, a_strides)
                 out[o] = fn(out[o], a_storage[j])
 
     # def _reduce(
@@ -431,7 +431,6 @@ def tensor_reduce(
     #             out[out_storage_position] = result
 
     return _reduce
-
 
 
 SimpleBackend = TensorBackend(SimpleOps)

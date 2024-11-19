@@ -7,7 +7,6 @@ from numba import prange
 from numba import njit as _njit
 
 from .tensor_data import (
-    MAX_DIMS,
     broadcast_index,
     index_to_position,
     shape_broadcast,
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
     from typing import Callable, Optional
 
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .tensor_data import Shape, Storage, Strides
 
 # TIP: Use `NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_1` to run these tests without JIT.
 
@@ -30,6 +29,7 @@ Fn = TypeVar("Fn")
 
 
 def njit(fn: Fn, **kwargs: Any) -> Fn:
+    """Wrapper for Numba's jit decorator with inline optimization."""
     return _njit(inline="always", **kwargs)(fn)  # type: ignore
 
 
@@ -181,7 +181,7 @@ def tensor_map(
             out[out_pos] = fn(in_storage[in_pos])
 
         # TODO: Implement for Task 3.1.
-        #raise NotImplementedError("Need to implement for Task 3.1")
+        # raise NotImplementedError("Need to implement for Task 3.1")
 
     return njit(_map, parallel=True)  # type: ignore
 
@@ -236,7 +236,7 @@ def tensor_zip(
 
             out[out_pos] = fn(a_storage[a_pos], b_storage[b_pos])
         # TODO: Implement for Task 3.1.
-        #raise NotImplementedError("Need to implement for Task 3.1")
+        # raise NotImplementedError("Need to implement for Task 3.1")
 
     return njit(_zip, parallel=True)  # type: ignore
 
@@ -284,7 +284,7 @@ def tensor_reduce(
                 a_pos = index_to_position(a_idx, a_strides)
                 out[out_pos] = fn(out[out_pos], a_storage[a_pos])
         # TODO: Implement for Task 3.1.
-        #raise NotImplementedError("Need to implement for Task 3.1")
+        # raise NotImplementedError("Need to implement for Task 3.1")
 
     return njit(_reduce, parallel=True)  # type: ignore
 
@@ -335,7 +335,6 @@ def _tensor_matrix_multiply(
     a_batch_stride = a_strides[0] if a_shape[0] > 1 else 0
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
-
     # for n in prange(out_shape[0]):  # Batch dimension
     #     for i in range(out_shape[1]):  # Rows of the result
     #         for j in range(out_shape[2]):  # Columns of the result
@@ -369,30 +368,18 @@ def _tensor_matrix_multiply(
                 acc = 0.0
                 for k in range(a_shape[2]):  # Inner product dimension
                     # Compute flat indices directly using strides
-                    a_pos = (
-                        n * a_batch_stride
-                        + i * a_strides[1]
-                        + k * a_strides[2]
-                    )
-                    b_pos = (
-                        n * b_batch_stride
-                        + k * b_strides[1]
-                        + j * b_strides[2]
-                    )
+                    a_pos = n * a_batch_stride + i * a_strides[1] + k * a_strides[2]
+                    b_pos = n * b_batch_stride + k * b_strides[1] + j * b_strides[2]
                     acc += a_storage[a_pos] * b_storage[b_pos]
 
                 # Compute the output position
-                out_pos = (
-                    n * out_strides[0]
-                    + i * out_strides[1]
-                    + j * out_strides[2]
-                )
+                out_pos = n * out_strides[0] + i * out_strides[1] + j * out_strides[2]
 
                 # Write result to the output storage
                 out[out_pos] = acc
 
     # TODO: Implement for Task 3.2.
-    #raise NotImplementedError("Need to implement for Task 3.2")
+    # raise NotImplementedError("Need to implement for Task 3.2")
 
 
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)

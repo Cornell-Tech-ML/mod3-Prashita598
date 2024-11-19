@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 import numpy as np
 
@@ -373,11 +373,14 @@ class Permute(Function):
             Tuple[Tensor, float]: The gradient with respect to the input and None.
 
         """
-        (order_list,) = ctx.saved_values
-        undo_permute_order = [0] * len(order_list)
-        for original_axis_position, new_axis_position in enumerate(order_list):
-            undo_permute_order[new_axis_position] = original_axis_position
-        return grad_output._new(grad_output._tensor.permute(*undo_permute_order)), 0.0
+        # Retrieve the order list saved in the context
+        order = ctx.saved_values[0]
+
+        # Reverse the permutation order
+        order2 = [a[0] for a in sorted(enumerate(order), key=lambda a: a[1])]
+
+        # Apply the reverse permutation to grad_output
+        return grad_output._new(grad_output._tensor.permute(*order2)), 0.0
 
 
 class All(Function):

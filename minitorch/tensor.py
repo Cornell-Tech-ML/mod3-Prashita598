@@ -13,7 +13,6 @@ from .tensor_data import TensorData
 
 # Comment these out if not yet implemented
 from .tensor_functions import (
-    EQ,
     LT,
     Add,
     All,
@@ -31,6 +30,7 @@ from .tensor_functions import (
     Sum,
     View,
     tensor,
+    EQ,
 )
 
 if TYPE_CHECKING:
@@ -372,12 +372,16 @@ class Tensor:
 
     def all(self, dim: Optional[int] = None) -> Tensor:
         """Check if all elements are non-zero (True)."""
+        # if dim is None:
+        #     return self.f.mul_reduce(
+        #         self.contiguous().view(int(operators.prod(self.shape))), 0
+        #     )
+        # else:
+        #     return All.apply(self, tensor(dim))
         if dim is None:
-            return self.f.mul_reduce(
-                self.contiguous().view(int(operators.prod(self.shape))), 0
-            )
+            return All.apply(self.view(self.size), self._ensure_tensor(0))
         else:
-            return All.apply(self, tensor(dim))
+            return All.apply(self, self._ensure_tensor(dim))
 
     def is_close(self, b: TensorLike) -> Tensor:
         """Element-wise is-close comparison."""
@@ -412,17 +416,14 @@ class Tensor:
 
         """
         if dim is None:
-            return Sum.apply(
-                self.contiguous().view(self.size),
-                self._ensure_tensor(0),
-            )
+            return Sum.apply(self.contiguous().view(self.size), self._ensure_tensor(0))
         else:
             return Sum.apply(self, self._ensure_tensor(dim))
 
     def mean(self, dim: Optional[int] = None) -> Tensor:
         """Compute the mean along the specified dimension."""
         if dim is not None:
-            return self.sum(dim) / self.shape [dim]
+            return self.sum(dim) / self.shape[dim]
         else:
             return self.sum() / self.size
 
@@ -431,7 +432,7 @@ class Tensor:
         order_tensor = tensor(list(order), backend=self.backend)
         return Permute.apply(self, order_tensor)
 
-    def view(self, *shape: UserShape | int) -> Tensor:
+    def view(self, *shape: int) -> Tensor:
         """Returns a new tensor with the same data but a different shape.
 
         The new shape must be compatible with the original shape.
@@ -448,12 +449,13 @@ class Tensor:
             Tensor: A new tensor with the specified shape.
 
         """
-        shape = (
-            (shape[0],)
-            if len(shape) == 1 and isinstance(shape[0], int)
-            else tuple(shape)
-        )
-        return View.apply(self, tensor(shape))
+        # shape = (
+        #     (shape[0],)
+        #     if len(shape) == 1 and isinstance(shape[0], int)
+        #     else tuple(shape)
+        # )
+        # return View.apply(self, tensor(shape))
+        return View.apply(self, tensor(list(shape)))
 
     def zero_grad_(self) -> None:
         """Set the gradient of the tensor to zero."""

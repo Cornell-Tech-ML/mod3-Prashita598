@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/Users/prashitabiswas/workspace/mod3-Prashita598")
 
 from numba import njit
 

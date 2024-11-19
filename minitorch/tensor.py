@@ -429,8 +429,7 @@ class Tensor:
 
     def permute(self, *order: int) -> Tensor:
         """Permute the dimensions of the tensor according to the specified order."""
-        order_tensor = tensor(list(order), backend=self.backend)
-        return Permute.apply(self, order_tensor)
+        return Permute.apply(self, tensor(order))
 
     def view(self, *shape: int) -> Tensor:
         """Returns a new tensor with the same data but a different shape.

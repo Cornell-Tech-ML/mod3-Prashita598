@@ -73,7 +73,7 @@ class FastTrain:
         optim = minitorch.SGD(self.model.parameters(), learning_rate)
         BATCH = 10
         losses = []
-        
+
         for epoch in range(max_epochs):
             start_time = time.time()
             total_loss = 0.0

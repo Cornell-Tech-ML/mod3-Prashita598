@@ -378,47 +378,6 @@ def tensor_reduce(
         reduce_dim: int,
         reduce_value: float,
     ) -> None:
-        #     BLOCK_DIM = 512
-        #     cache = cuda.shared.array(BLOCK_DIM, numba.float64)
-        #     out_index = cuda.local.array(MAX_DIMS, numba.int32)
-        #     out_pos = cuda.blockIdx.x
-        #     pos = cuda.threadIdx.x
-
-        #     # TODO: Implement for Task 3.3.
-        #     #raise NotImplementedError("Need to implement for Task 3.3")
-        #     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-
-        #     if i < out_size:
-        #         # Initialize output index
-        #         to_index(i, out_shape, out_index)
-        #         out_position = index_to_position(out_index, out_strides)
-
-        #         # Initialize cache with the reduction identity value
-        #         cache[pos] = reduce_value
-
-        #         # Perform reduction along the specified dimension
-        #         for j in range(a_shape[reduce_dim]):
-        #             a_index = cuda.local.array(MAX_DIMS, numba.int32)
-        #             for k in range(MAX_DIMS):
-        #                 a_index[k] = out_index[k]
-        #             a_index[reduce_dim] = j
-        #             a_position = index_to_position(a_index, a_strides)
-
-        #             cache[pos] = fn(cache[pos], a_storage[a_position])
-
-        #         # Perform parallel reduction within the block
-        #         stride = 1
-        #         while stride < BLOCK_DIM:
-        #             if pos % (2 * stride) == 0 and pos + stride < BLOCK_DIM:
-        #                 cache[pos] = fn(cache[pos], cache[pos + stride])
-        #             stride *= 2
-        #             cuda.syncthreads()
-
-        #         # Write the final reduced value to the output tensor
-        #         if pos == 0:
-        #             out[out_position] = cache[0]
-
-        # return jit(_reduce)  # type: ignore
         BLOCK_DIM = 512
         cache = cuda.shared.array(BLOCK_DIM, numba.float64)
 
@@ -510,26 +469,38 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
         size (int): size of the square
 
     """
+    # Define the block dimension (maximum size for shared memory arrays)
     BLOCK_DIM = 32
-    # TODO: Implement for Task 3.3.
-    # raise NotImplementedError("Need to implement for Task 3.3")
+
+    # Declare shared memory arrays for storing blocks of matrices `a` and `b`
     shared_a = numba.cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
     shared_b = numba.cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
 
+    # Get the thread's coordinates within the block (x: column, y: row)
     y = numba.cuda.threadIdx.y
     x = numba.cuda.threadIdx.x
+
+    # Load the data from global memory into shared memory
     if x < size and y < size:
-        shared_a[y, x] = a[y * size + x]
+        # If the thread's indices are within the bounds of the matrix
+        shared_a[y, x] = a[y * size + x]  # Load from global memory into shared memory
         shared_b[y, x] = b[y * size + x]
     else:
+        # For threads outside the matrix bounds, set shared memory to zero
         shared_a[y, x] = 0
         shared_b[y, x] = 0
+
+    # Synchronize all threads in the block to ensure shared memory is fully loaded
     numba.cuda.syncthreads()
 
+    # Perform the matrix multiplication using shared memory
     if y < size and x < size:
+        # Initialize a temporary variable to accumulate the dot product
         temp = 0
+        # Compute the dot product for the current cell (i, j)
         for val in range(size):
             temp += shared_a[y, val] * shared_b[val, x]
+        # Write the computed value to the output matrix in global memory
         out[y * size + x] = temp
 
 
